@@ -3,7 +3,11 @@
 #include <fstream>
 #include <vector>
 #include <string>
-#include <type_traits>
+#include <set>
+#include <algorithm>
+#include <limits>
+#include <stack>
+#include <array>
 
 #define STRINGIFY(x) #x
 
@@ -17,19 +21,45 @@
 
 #define FIXED_FLOAT(x) std::fixed << std::setprecision(3) << (x)
 
+struct Edge
+{
+	size_t index; // neighbour index
+	int weight;
+	std::string sequencePart;
+	// example: T[AAAA] & [AAAA]C -> weight = 0, sequencePart = "C" 
+	// example: TC[T] & [T]GG -> weight = 1, sequencePart = "GG" 
+	// example: ATCA[AG-CAAC] & [AGACTAC]TC -> weight = ?, sequencePart = "TC" 
+};
+
 class Instance
 {
 public:
     Instance(std::filesystem::path filepath)
         : filepath{ filepath }
     {
+        std::ifstream file{ filepath };
+        if (file.is_open())
+        {
+            while (file)
+            {
+                std::string oligonucleotide;
+                std::getline(file, oligonucleotide);
+                if (!oligonucleotide.empty())
+                    oligonucleotides.push_back(std::move(oligonucleotide));
+            }
+            file.close();
+        }
         extractInstanceInfo();
+
+        buildAdjMatrix();
+        buildAdjList();
     }
 
+private:
     void extractInstanceInfo()
     {
         name = filepath.filename().string();
-        l = 10;
+        l = oligonucleotides[0].size();
 
         size_t dotPos = name.find('.');
         size_t plusPos = name.find('+');
@@ -56,6 +86,88 @@ public:
             errorType = POSITIVE_WRONG_ENDING;
     }
 
+    // nucleotide compatibility
+    inline int compat(char n1, char n2)
+    {
+        if (n1 == n2)
+            return 1;
+        else
+            return -1;
+    }
+
+    // TODO: implement levenshtein distance
+    // returns pair: <weight, sequencePart>
+    std::pair<int, std::string> bestMatch(const std::string o1, const std::string o2)
+    {
+        size_t n = o1.size();
+        size_t m = o2.size();
+
+        int g = -2; // space cost
+
+        std::vector<std::vector<int>> M(n, std::vector<int>(m));
+        
+        for (size_t i = 0; i < n; ++i)
+        {
+            for (size_t j = 0; j < m; ++j)
+            {
+                if (i == 0 || j == 0)
+                {
+                    M[i][j] = 0;
+                }
+                else
+                {
+                    M[i][j] = std::max({
+                        M[i - 1][j - 1] + compat(o1[i], o2[j]),
+                        M[i - 1][j] + g,
+                        M[i][j - 1] + g
+                        });
+                }
+            }
+        }
+
+        // TODO: extract best match
+
+        return std::make_pair(0, "");
+    }
+
+public:
+    void buildAdjMatrix()
+    {
+        for (size_t i = 0; i < oligonucleotides.size(); ++i)
+        {
+            adjMatrix.push_back(std::vector<int>{});
+
+            for (size_t j = 0; j < oligonucleotides.size(); ++j)
+            {
+                int weight = bestMatch(oligonucleotides[i], oligonucleotides[j]).first;
+                adjMatrix[i].push_back(weight);
+            }
+        }
+    }
+
+    void buildAdjList()
+    {
+        for (size_t i = 0; i < oligonucleotides.size(); ++i)
+        {
+            adjList.push_back(std::vector<Edge>{});
+
+            for (size_t j = 0; j < oligonucleotides.size(); ++j)
+            {
+                if (i != j)
+                {
+					std::pair<int, std::string> match = bestMatch(oligonucleotides[i], oligonucleotides[j]);
+                    if (match.first < l)
+                    {
+                        adjList[i].push_back(Edge{j, match.first, match.second});
+                    }
+                }
+            }
+
+            std::sort(adjList[i].begin(), adjList[i].end(),
+                [](const Edge& e1, const Edge& e2) { return e1.weight < e2.weight; });
+        }
+    }
+
     enum ErrorType
     {
         NONE,
@@ -73,19 +185,22 @@ public:
     size_t l = 0; // oligonucleotide length
     std::string name{};
     std::vector<std::string> oligonucleotides{};
+    std::vector<std::vector<int>> adjMatrix;
+    std::vector<std::vector<Edge>> adjList;
 };
 
 class Sequencer
 {
 public:
-    virtual size_t run(const Instance& instance) const = 0; // returns number of oligonucleotides used
+    virtual ~Sequencer() {};
+    virtual size_t run(const Instance& instance) = 0; // returns number of oligonucleotides used
     virtual std::string getName() const = 0;
 };
 
 class STSP_Sequencer : public Sequencer
 {
 public:
-    virtual size_t run(const Instance& instance) const override
+    virtual size_t run(const Instance& instance) override
     {
         // TODO: implement STSP Sequencer
         return 0.9f * instance.s;
@@ -100,16 +215,96 @@ public:
 class Our_Sequencer : public Sequencer
 {
 public:
-    virtual size_t run(const Instance& instance) const override
+    virtual size_t run(const Instance& instance) override
     {
         // TODO: implement our Sequencer
-        return 1;
+        this->instance = &instance;
+        visited.clear();
+        sequence.clear();
+        sequenceParts = std::stack<std::string>{};
+        N = instance.s;
+        minCost = std::numeric_limits<size_t>::max();
+        maxLevel = 0;
+
+        stsp(0, 0, 0);
+
+        sequence = makeSequence(bestSequenceParts);
+
+        return bestSequenceParts.size();
     }
 
     virtual std::string getName() const override
     {
         return "Our Sequencer";
     }
+
+private:
+    std::set<int> visited{};
+    std::string sequence{};
+    std::stack<std::string> sequenceParts{};
+    std::stack<std::string> bestSequenceParts{};
+    size_t N = 0;
+    size_t minCost = std::numeric_limits<size_t>::max();
+    size_t maxLevel = 0;
+    const Instance* instance;
+
+    void stsp(size_t currPos, size_t cost, size_t length)
+    { 
+		// If all the selected nodes have been visited 
+		if (visited.size() == N)
+        { 
+            if (cost < minCost)
+            {
+                maxLevel = visited.size();
+			    minCost = cost; 
+                bestSequenceParts = sequenceParts;
+            }
+			return; 
+		} 
+
+		// If the current cost exceeds the minimum cost found so far 
+        /*
+		if (cost + (N - visited.size()) * findMin(currPos) >= ans)
+        { 
+			return; 
+		} 
+        */
+
+		// Iterate over all unvisited nodes 
+        for (size_t i = 0; i < 4 && i < instance->adjList[currPos].size(); ++i)
+        {
+            Edge next = instance->adjList[currPos][i];
+            if (visited.find(next.index) == visited.end())
+            {
+                visited.insert(next.index);
+                sequenceParts.push(next.sequencePart);
+                
+                stsp(next.index, cost + instance->adjMatrix[currPos][next.index], length + next.sequencePart.size());
+
+                sequenceParts.pop();
+                visited.erase(next.index);
+            }
+        }
+    } 
+
+    std::string makeSequence(std::stack<std::string> parts)
+    {
+        std::vector<std::string> partsVec{};
+        while (!parts.empty())
+        {
+            partsVec.push_back(parts.top());
+            parts.pop();
+        }
+
+        std::string sequence{};
+        for (int i = partsVec.size() - 1; i >= 0; --i)
+        {
+            sequence += partsVec[i];
+        }
+
+        return sequence;
+    }
+
 };
 
 class Tester
@@ -118,7 +313,7 @@ class Tester
 
 public:
 
-    static void test(const Sequencer& s, const Insts& tests)
+    static void test(Sequencer& s, Insts& tests)
     {
         std::cout << "##### RUNNING TEST ON: " << s.getName() << " #####\n";
         for (const Instance& instance : tests)
@@ -129,7 +324,7 @@ public:
         }
     }
 
-    static void compare(const Sequencer& s1, const Sequencer& s2, const Insts& tests)
+    static void compare(Sequencer& s1, Sequencer& s2, const Insts& tests)
     {
         std::cout << "##### RUNNING COMPARISON BETWEEN: " << s1.getName()
                   << " AND " << s2.getName() << " #####\n";
@@ -157,22 +352,8 @@ int main()
     std::filesystem::path path{ projectPath + "/tests" };
     for (const auto& entry : std::filesystem::directory_iterator(path))
     {
-        Instance instance{entry.path()};
-
-        std::ifstream file{ entry.path() };
-        if (file.is_open())
-        {
-            while (file)
-            {
-                std::string oligonucleotide;
-                std::getline(file, oligonucleotide);
-                if (oligonucleotide.size() == instance.l)
-                    instance.oligonucleotides.push_back(std::move(oligonucleotide));
-            }
-            file.close();
-        }
-
-        tests.push_back(std::move(instance));
+        tests.push_back(Instance{entry.path()});
+        break; // DEBUG: hard coded to test only one instance
     }
 
     STSP_Sequencer perfectSequencer;
