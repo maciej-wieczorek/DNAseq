@@ -99,8 +99,8 @@ private:
     // returns pair: <weight, sequencePart>
     std::pair<int, std::string> bestMatch(const std::string o1, const std::string o2)
     {
-        size_t n = o1.size();
-        size_t m = o2.size();
+        size_t n = o1.size() + 1;
+        size_t m = o2.size() + 1;
 
         int g = -2; // space cost
 
@@ -117,7 +117,7 @@ private:
                 else
                 {
                     M[i][j] = std::max({
-                        M[i - 1][j - 1] + compat(o1[i], o2[j]),
+                        M[i - 1][j - 1] + compat(o1[i-1], o2[j-1]),
                         M[i - 1][j] + g,
                         M[i][j - 1] + g
                         });
@@ -125,9 +125,23 @@ private:
             }
         }
 
-        // TODO: extract best match
+        // find best distance and index (semi-global match)
+        std::vector<int>& lastRow = M[M.size() - 1];
+        int bestDistance = lastRow[0];
+        size_t bestDistanceIndex = 0;
+        for (size_t i = 0; i < lastRow.size() - 1; ++i) // don't check last element 
+        {
+            int distance = lastRow[i];
+            if (distance > bestDistance)
+            {
+                bestDistance = distance;
+                bestDistanceIndex = i;
+            }   
+        }
 
-        return std::make_pair(0, "");
+        std::string sequencePart = o2.substr(bestDistanceIndex, lastRow.size() - bestDistanceIndex - 1);
+
+        return std::make_pair(bestDistance, sequencePart);
     }
 
 public:
@@ -139,8 +153,15 @@ public:
 
             for (size_t j = 0; j < oligonucleotides.size(); ++j)
             {
-                int weight = bestMatch(oligonucleotides[i], oligonucleotides[j]).first;
-                adjMatrix[i].push_back(weight);
+                if (i != j)
+                {
+                    int weight = bestMatch(oligonucleotides[i], oligonucleotides[j]).first;
+                    adjMatrix[i].push_back(weight);
+                }
+                else
+                {
+                    adjMatrix[i].push_back(std::numeric_limits<int>::min());
+                }
             }
         }
     }
@@ -164,7 +185,7 @@ public:
             }
 
             std::sort(adjList[i].begin(), adjList[i].end(),
-                [](const Edge& e1, const Edge& e2) { return e1.weight < e2.weight; });
+                [](const Edge& e1, const Edge& e2) { return e1.weight > e2.weight; });
         }
     }
 
@@ -222,11 +243,13 @@ public:
         visited.clear();
         sequence.clear();
         sequenceParts = std::stack<std::string>{};
-        N = instance.s;
-        minCost = std::numeric_limits<size_t>::max();
+        N = instance.n;
+        maxGain = std::numeric_limits<size_t>::min();
         maxLevel = 0;
-
-        stsp(0, 0, 0);
+        
+        visited.insert(0);
+        sequenceParts.push(instance.oligonucleotides[0]);
+        stsp(0, 0, instance.l);
 
         sequence = makeSequence(bestSequenceParts);
 
@@ -244,19 +267,19 @@ private:
     std::stack<std::string> sequenceParts{};
     std::stack<std::string> bestSequenceParts{};
     size_t N = 0;
-    size_t minCost = std::numeric_limits<size_t>::max();
+    size_t maxGain = std::numeric_limits<size_t>::min();
     size_t maxLevel = 0;
     const Instance* instance;
 
-    void stsp(size_t currPos, size_t cost, size_t length)
+    void stsp(size_t currPos, size_t gain, size_t length)
     { 
 		// If all the selected nodes have been visited 
-		if (visited.size() == N)
+		if (length == N)
         { 
-            if (cost < minCost)
+            if (gain > maxGain)
             {
                 maxLevel = visited.size();
-			    minCost = cost; 
+                maxGain = gain;
                 bestSequenceParts = sequenceParts;
             }
 			return; 
@@ -271,7 +294,7 @@ private:
         */
 
 		// Iterate over all unvisited nodes 
-        for (size_t i = 0; i < 4 && i < instance->adjList[currPos].size(); ++i)
+        for (size_t i = 0; i < instance->adjList[currPos].size(); ++i)
         {
             Edge next = instance->adjList[currPos][i];
             if (visited.find(next.index) == visited.end())
@@ -279,7 +302,7 @@ private:
                 visited.insert(next.index);
                 sequenceParts.push(next.sequencePart);
                 
-                stsp(next.index, cost + instance->adjMatrix[currPos][next.index], length + next.sequencePart.size());
+                stsp(next.index, gain + instance->adjMatrix[currPos][next.index], length + next.sequencePart.size());
 
                 sequenceParts.pop();
                 visited.erase(next.index);
@@ -353,7 +376,7 @@ int main()
     for (const auto& entry : std::filesystem::directory_iterator(path))
     {
         tests.push_back(Instance{entry.path()});
-        break; // DEBUG: hard coded to test only one instance
+        break;// DEBUG: hard coded to test only one instance
     }
 
     STSP_Sequencer perfectSequencer;
