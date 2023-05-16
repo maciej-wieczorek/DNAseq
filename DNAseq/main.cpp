@@ -1,4 +1,6 @@
 #include <iostream>
+#include <thread>
+#include <mutex>
 
 #include "Instance.h"
 
@@ -89,6 +91,15 @@ public:
     }
 };
 
+void loadInstance(std::filesystem::path path, std::vector<Instance>* tests, std::mutex* mutex)
+{
+    Instance&& instance = Instance{ path };
+    mutex->lock();
+    std::cout << "Loaded " << path << std::endl;
+    tests->push_back(instance);
+    mutex->unlock();
+}
+
 int main()
 {
 #ifdef PROJECT_PATH
@@ -98,11 +109,18 @@ int main()
 
     std::vector<Instance> tests;
     std::filesystem::path path{ projectPath + "/tests" };
+
+    std::vector<std::thread> workers;
+    std::mutex mutex;
     for (const auto& entry : std::filesystem::directory_iterator(path))
     {
-        std::cout << "Loading " << entry.path() << "\n";
-        tests.push_back(Instance{entry.path()});
+        workers.push_back(std::thread(loadInstance, entry.path(), &tests, &mutex));
         // break;// DEBUG: hard coded to test only one instance
+    }
+
+    for (auto& worker : workers)
+    {
+        worker.join();
     }
 
     STSP_Sequencer perfectSequencer;
