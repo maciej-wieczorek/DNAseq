@@ -3,6 +3,7 @@
 #include <mutex>
 
 #include "Instance.h"
+#include "LocalSearch.h"
 
 #define STRINGIFY(x) #x
 
@@ -115,13 +116,17 @@ int main()
     for (const auto& entry : std::filesystem::directory_iterator(path))
     {
         workers.push_back(std::thread(loadInstance, entry.path(), &tests, &mutex));
-        // break;// DEBUG: hard coded to test only one instance
+        break;// DEBUG: hard coded to test only one instance
     }
 
     for (auto& worker : workers)
     {
         worker.join();
     }
+
+    Solution solution{ 0, 1, 2, 3, 4 };
+    LocalSearch ls = LocalSearch{ tests[0], solution };
+    ls.run();
 
     STSP_Sequencer perfectSequencer;
     Our_Sequencer ourSequencer{};
