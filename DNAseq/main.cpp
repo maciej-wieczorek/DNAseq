@@ -2,6 +2,7 @@
 #include <thread>
 #include <mutex>
 
+#include "AntColony.h"
 #include "Instance.h"
 #include "Logger.h"
 
@@ -47,6 +48,14 @@ public:
     {
         // TODO: implement our Sequencer
         // use AntColony and LocalSearch
+        AntColony antColony(instance, AntColony::Parameters(100, 100, 1.f, 1.f, 0.1f));
+        std::vector<int> result = antColony.Run();
+
+        for (int vertex : result) {
+            std::cout << vertex << " ";
+        }
+        std::cout << std::endl;
+
         return 1;
     }
 
@@ -102,6 +111,7 @@ void loadInstance(std::filesystem::path path, std::vector<Instance>* tests, std:
 }
 
 int main() {
+    srand(time(nullptr));
     Logger::Init();
 
     LOG_INFO("Logger initialized.");
@@ -127,7 +137,7 @@ int main() {
     for (const auto& entry : std::filesystem::directory_iterator(path))
     {
         workers.push_back(std::thread(loadInstance, entry.path(), &tests, &mutex));
-        // break;// DEBUG: hard coded to test only one instance
+        // break; // DEBUG: hard coded to test only one instance
     }
 
     for (auto& worker : workers)

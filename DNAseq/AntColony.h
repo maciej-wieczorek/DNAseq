@@ -23,11 +23,8 @@ public:
 	
 private:
 	void Iteration();
-
-	std::vector<int> GeneratePath();
-	void UpdatePheromone(int** ants);
-
 	std::vector<int> Result();
+	std::string PheromeneToString() const;
 	
 private:
 	const Instance& m_Instance;
