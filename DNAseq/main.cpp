@@ -3,6 +3,7 @@
 #include <mutex>
 
 #include "Instance.h"
+#include "Logger.h"
 
 #define STRINGIFY(x) #x
 
@@ -100,8 +101,19 @@ void loadInstance(std::filesystem::path path, std::vector<Instance>* tests, std:
     mutex->unlock();
 }
 
-int main()
-{
+int main() {
+    Logger::Init();
+
+    LOG_INFO("Logger initialized.");
+
+    // example logs:
+    // int variable = 200;
+    // LOG_TRACE("message {} / {} ({})", 123, variable, "text");
+    // LOG_INFO("message {} / {} ({})", 123, variable, "text");
+    // LOG_WARN("message {} / {} ({})", 123, variable, "text");
+    // LOG_ERROR("message {} / {} ({})", 123, variable, "text");
+    // LOG_CRITICAL("message {} / {} ({})", 123, variable, "text");
+
 #ifdef PROJECT_PATH
     projectPath.erase(0, 1); // erase the first quote
     projectPath.erase(projectPath.size() - 2); // erase the last quote and the dot
