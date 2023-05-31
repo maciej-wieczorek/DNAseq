@@ -40,16 +40,10 @@ public:
         LocalSearch localSearch(instance, lsInput);
         Solution improvedResult = localSearch.run();
 
-        for (size_t vertex : improvedResult) {
-            std::cout << vertex << " ";
-        }
-        std::cout << std::endl;
+        LOG_INFO("sequence: {}", instance.output(improvedResult));
+        LOG_INFO("length: {}/{}", instance.outputLength(improvedResult), instance.n);
 
-        size_t outputLength = instance.outputLength(improvedResult);
-        std::cout << "sequence: " << instance.output(improvedResult) << std::endl;
-        std::cout << "length: " << outputLength << "/" << instance.n << std::endl;
-
-        return result.size();
+        return improvedResult.size();
     }
 
     virtual std::string getName() const override
