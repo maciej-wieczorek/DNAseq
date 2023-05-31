@@ -2,8 +2,10 @@
 #include <thread>
 #include <mutex>
 
+#include "AntColony.h"
 #include "Instance.h"
 #include "LocalSearch.h"
+#include "Logger.h"
 
 #define STRINGIFY(x) #x
 
@@ -25,21 +27,6 @@ public:
     virtual std::string getName() const = 0;
 };
 
-class STSP_Sequencer : public Sequencer
-{
-public:
-    virtual size_t run(const Instance& instance) override
-    {
-        // TODO: implement STSP Sequencer
-        return 0.9f * instance.s;
-    }
-
-    virtual std::string getName() const override
-    {
-        return "STSP Sequencer";
-    }
-};
-
 class Our_Sequencer : public Sequencer
 {
 public:
@@ -47,7 +34,15 @@ public:
     {
         // TODO: implement our Sequencer
         // use AntColony and LocalSearch
-        return 1;
+        AntColony antColony(instance, AntColony::Parameters(100, 100, 1.f, 1.f, 0.1f));
+        std::vector<int> result = antColony.Run();
+
+        for (int vertex : result) {
+            std::cout << vertex << " ";
+        }
+        std::cout << std::endl;
+
+        return result.size();
     }
 
     virtual std::string getName() const override
@@ -101,8 +96,20 @@ void loadInstance(std::filesystem::path path, std::vector<Instance>* tests, std:
     mutex->unlock();
 }
 
-int main()
-{
+int main() {
+    srand(time(nullptr));
+    Logger::Init();
+
+    LOG_INFO("Logger initialized.");
+
+    // example logs:
+    // int variable = 200;
+    // LOG_TRACE("message {} / {} ({})", 123, variable, "text");
+    // LOG_INFO("message {} / {} ({})", 123, variable, "text");
+    // LOG_WARN("message {} / {} ({})", 123, variable, "text");
+    // LOG_ERROR("message {} / {} ({})", 123, variable, "text");
+    // LOG_CRITICAL("message {} / {} ({})", 123, variable, "text");
+
 #ifdef PROJECT_PATH
     projectPath.erase(0, 1); // erase the first quote
     projectPath.erase(projectPath.size() - 2); // erase the last quote and the dot
@@ -116,7 +123,7 @@ int main()
     for (const auto& entry : std::filesystem::directory_iterator(path))
     {
         workers.push_back(std::thread(loadInstance, entry.path(), &tests, &mutex));
-        break;// DEBUG: hard coded to test only one instance
+        // break; // DEBUG: hard coded to test only one instance
     }
 
     for (auto& worker : workers)
@@ -124,15 +131,8 @@ int main()
         worker.join();
     }
 
-    Solution solution{ 4 };
-    LocalSearch ls = LocalSearch{ tests[0], solution };
-    Solution improvedSolution = ls.run();
-
-    STSP_Sequencer perfectSequencer;
     Our_Sequencer ourSequencer{};
-
     Tester::test(ourSequencer, tests);
-    Tester::compare(perfectSequencer, ourSequencer, tests);
 
     return 0;
 }
