@@ -15,18 +15,15 @@ AntColony::AntColony(const Instance& instance, const Parameters& parameters)
 	: m_Instance(instance), m_Parameters(parameters) {
 	int size = m_Instance.oligonucleotides.size();
 
-	m_Pheromone = std::vector<std::vector<float>>();
-	for (int i = 0; i < size + 1; i++) {
-		m_Pheromone.push_back(std::vector<float>());
-		for (int j = 0; j < size; j++) {
-			m_Pheromone[i].push_back(1.f);
-		}
-	}
+	m_Pheromone = std::vector<std::vector<float>>(size + 1, std::vector<float>(size, 1.f));
+	m_PheromoneDeposited = std::vector<std::vector<float>>(size + 1, std::vector<float>(size, 0.f));
+	m_Weights = std::vector<float>(size, 1.f);
 }
 
 AntColony::~AntColony() {}
 
 std::vector<int> AntColony::Run() {
+
 	for (int i = 0; i < m_Parameters.Iterations; i++) {
 		Iteration();
 
@@ -42,14 +39,11 @@ void AntColony::Iteration() {
 	int size = m_Instance.oligonucleotides.size();
 
 	// pheromene deposited
-	std::vector<std::vector<float>> pheromoneDeposited = std::vector<std::vector<float>>();
 	for (int i = 0; i < size + 1; i++) {
-		pheromoneDeposited.push_back(std::vector<float>());
 		for (int j = 0; j < size; j++) {
-			pheromoneDeposited[i].push_back(0.f);
+			m_PheromoneDeposited[i][j] = (0.f);
 		}
 	}
-
 
 	for (int a = 0; a < m_Parameters.Ants; a++) {
 		int size = m_Instance.oligonucleotides.size();
@@ -60,9 +54,8 @@ void AntColony::Iteration() {
 		std::vector<int> path;
 		path.push_back(currentVertex);
 
-		std::vector<float> weights;
 		for (int i = 0; i < size; i++) {
-			weights.push_back(1.0f);
+			m_Weights[i] = 1.f;
 		}
 
 		// generate ant path
@@ -74,7 +67,7 @@ void AntColony::Iteration() {
 			int availableVertices = 0;
 
 			for (int i = 0; i < size; i++) {
-				if (weights[i] < 0.f) {
+				if (m_Weights[i] < 0.f) {
 					continue;
 				}
 
@@ -82,13 +75,13 @@ void AntColony::Iteration() {
 				int distance = currentVertex == size ? m_Instance.l : m_Instance.adjMatrix[currentVertex][i];
 
 				if (pathLength + distance > m_Instance.n) {
-					weights[i] = -1.f;
+					m_Weights[i] = -1.f;
 					continue;
 				}
 
 				// calculate weight of edge
-				float weight = std::pow(m_Pheromone[currentVertex][i], m_Parameters.Alpha) * std::pow(1.f / (float)distance, m_Parameters.Beta);
-				weights[i] = weight;
+				float weight = std::powf(m_Pheromone[currentVertex][i], m_Parameters.Alpha) * std::powf(1.f / (float)distance, m_Parameters.Beta);
+				m_Weights[i] = weight;
 				weightsSum += weight;
 				availableVertices++;
 			}
@@ -102,10 +95,10 @@ void AntColony::Iteration() {
 			int nextVertex = -1;
 			float random = (float)rand() / (float)RAND_MAX * weightsSum;
 			for (int i = 0; i < size; i++) {
-				if (weights[i] < 0.f) {
+				if (m_Weights[i] < 0.f) {
 					continue;
 				}
-				random -= weights[i];
+				random -= m_Weights[i];
 				if (random < 0.f) {
 					nextVertex = i;
 					break;
@@ -113,7 +106,7 @@ void AntColony::Iteration() {
 			}
 			if (nextVertex == -1) {
 				for (int i = 0; i < size; i++) {
-					if (weights[i] >= 0.f) {
+					if (m_Weights[i] >= 0.f) {
 						nextVertex = i;
 						break;
 					}
@@ -122,13 +115,13 @@ void AntColony::Iteration() {
 
 			path.push_back(nextVertex);
 			pathLength += currentVertex == size ? m_Instance.l : m_Instance.adjMatrix[currentVertex][nextVertex];
-			weights[nextVertex] = -1.f;
+			m_Weights[nextVertex] = -1.f;
 			currentVertex = nextVertex;
 		}
 
 		// calculate added pheromone
 		for (int i = 0; i < path.size() - 1; i++) {
-			pheromoneDeposited[path[i]][path[i + 1]] += (float)path.size() / (float)m_Instance.bestSolutionSize;
+			m_PheromoneDeposited[path[i]][path[i + 1]] += (float)path.size() / (float)m_Instance.bestSolutionSize;
 		}
 	}
 
@@ -136,7 +129,7 @@ void AntColony::Iteration() {
 	// update pheromone
 	for (int i = 0; i < size + 1; i++) {
 		for (int j = 0; j < size; j++) {
-			m_Pheromone[i][j] = (1.f - m_Parameters.Evaporation) * m_Pheromone[i][j] + pheromoneDeposited[i][j];
+			m_Pheromone[i][j] = (1.f - m_Parameters.Evaporation) * m_Pheromone[i][j] + m_PheromoneDeposited[i][j];
 		}
 	}
 
