@@ -15,6 +15,7 @@ class Instance
 {
 public:
     Instance(std::filesystem::path filepath);
+    size_t outputLength(const std::vector<size_t>& solution) const;
 
 private:
     void extractInstanceInfo();
@@ -37,8 +38,9 @@ public:
     ErrorType errorType = NONE;
     size_t numErrors = 0;
     size_t n = 0; // dna sequence length
-    size_t s = 0; // number of oligonucleotides
+    size_t s = 0; // number of oligonucleotides in original spectrum
     size_t l = 0; // oligonucleotide length
+    size_t bestSolutionSize = 0;
     std::string name{};
     std::vector<std::string> oligonucleotides{};
     std::vector<std::vector<int>> adjMatrix;

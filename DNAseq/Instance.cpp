@@ -49,6 +49,13 @@ void Instance::extractInstanceInfo()
         errorType = POSITIVE_RANDOM;
     else if (plusPos != std::string::npos)
         errorType = POSITIVE_WRONG_ENDING;
+
+    if (errorType == NEGATIVE_RANDOM || errorType == NEGATIVE_REPEAT)
+        bestSolutionSize = s - numErrors;
+    else if (errorType == POSITIVE_RANDOM || errorType == POSITIVE_WRONG_ENDING)
+        bestSolutionSize = s;
+    else
+        bestSolutionSize = s;
 }
 
 int Instance::bestMatch(const std::string o1, const std::string o2)
@@ -69,6 +76,19 @@ int Instance::bestMatch(const std::string o1, const std::string o2)
     }
 
     return o1.size();
+}
+
+size_t Instance::outputLength(const std::vector<size_t>& solution) const
+{
+	int value{};
+	for (size_t i = 0; i < solution.size() - 1; ++i)
+	{
+		size_t v1 = solution[i];
+		size_t v2 = solution[i + 1];
+		value += adjMatrix[v1][v2];
+	}
+
+	return value + l;
 }
 
 void Instance::buildAdjMatrix()
