@@ -124,7 +124,7 @@ int main()
         worker.join();
     }
 
-    Solution solution{ 0, 1, 2, 3, 4 };
+    Solution solution{ 1, 3, 4 };
     LocalSearch ls = LocalSearch{ tests[0], solution };
     ls.run();
 

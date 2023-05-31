@@ -1,31 +1,32 @@
 #include "LocalSearch.h"
 
 LocalSearch::LocalSearch(const Instance& instance, Solution solution) :
-	instance{ &instance }, bestSolution{ solution }, bestValue{ 0 }
+	instance{ &instance }, bestSolution{ solution, cost(solution, &instance) }
 {
-	bestValue = solutionValue(bestSolution);
+
 }
 
 Solution LocalSearch::run(size_t tabuSize, size_t numIterations, size_t k)
 {
-	tabuList = std::vector<Solution>{};
+	if (!isValid(bestSolution.solution, instance))
+		throw std::exception{};
+
+	tabuList = std::vector<RankedSolution>{};
 	for (size_t i = 0; i < numIterations; ++i)
 	{
-		Neighbours neighbours = generateNeighbours(k);
-		const RankedSolution& bestNeighbour = neighbours[getBestNeighbour(neighbours)];
+		RankedSolution bestNeighbour = getBestNeighbour(k);
 
-		if (bestNeighbour.value > bestValue)
+		if (bestNeighbour > bestSolution)
 		{
-			bestSolution = bestNeighbour.solution;
-			bestValue = bestNeighbour.value;
+			bestSolution = bestNeighbour;
 			tabuList.push_back(bestSolution);
 		}
 		else
 		{
-			return bestSolution;
+			return bestSolution.solution;
 		}
 	}
-	return bestSolution;
+	return bestSolution.solution;
 }
 
 Solution do2Opt(const Solution& path, size_t i, size_t j)
@@ -35,49 +36,50 @@ Solution do2Opt(const Solution& path, size_t i, size_t j)
 	return pathCopy;
 }
 
-Neighbours LocalSearch::generateNeighbours(size_t k)
+RankedSolution LocalSearch::getBestNeighbour(size_t k)
 {
 	// jak zawsze jest improvement to nigdy nie ma potworzen, po co tabu?
 	// nie istniejace polaczenie mozna zamienic na istniejace
 	// nie oceniaj rozwiazan po koszcie tylko po liczbie miast (nie do konca)
 	// test czy valid
-	Neighbours neighbours{};
-	const size_t n = instance->s;
+	RankedSolution bestNeighbour{};
+	const size_t n = instance->adjMatrix.size();
 
 	for (int i = 0; i <= n - k; i++)
 	{
 		for (int j = i + 1; j <= n + 1 - k; j++)
 		{
 			const auto& dist = instance->adjMatrix;
-			int valueDelta = dist[i][(i + 1) % n] - dist[j][(j + 1) % n] + dist[i][j] + dist[(i + 1) % n][(j + 1) % n];
+			int costDelta = dist[i][(i + 1) % n] - dist[j][(j + 1) % n] + dist[i][j] + dist[(i + 1) % n][(j + 1) % n];
 
-			Solution neighbour = do2Opt(bestSolution, i, j);
-			neighbours.push_back(RankedSolution{ neighbour, bestValue + valueDelta });
+			Solution neighbourSolution = do2Opt(bestSolution.solution, i, j);
+			int c = cost(neighbourSolution, instance);
+			RankedSolution neighbour = { std::move(neighbourSolution), c};
+			if (isValid(neighbour.solution, instance) && !isTabu(neighbour))
+			{
+				if (neighbour > bestNeighbour)
+					bestNeighbour = neighbour;
+			}
 		}
 	}
-	return neighbours;
-}
-
-size_t LocalSearch::getBestNeighbour(const Neighbours& neighbours)
-{
-	int bestVal = std::numeric_limits<int>::max();
-	size_t bestIdx = 0;
-	for (size_t i = 0; i < neighbours.size(); ++i)
-	{
-		if (neighbours[i].value < bestVal)
-		{
-			bestVal = neighbours[i].value;
-			bestIdx = i;
-		}
-	}
-
-	return bestIdx;
+	return bestNeighbour;
 }
 
 int LocalSearch::solutionValue(const Solution& solution)
 {
 	// jak rozwiazanie jest krotsze, ale maly koszt to powinno byc lepsze od dluzszego
 	return solution.size();
+}
+
+bool LocalSearch::isTabu(const RankedSolution& solution)
+{
+	for (const auto& s : tabuList)
+	{
+		if (s == solution)
+			return false;
+	}
+
+	return true;
 }
 
 int cost(const Solution& solution, const Instance* instance)
@@ -100,5 +102,5 @@ size_t outputLength(const Solution& solution, const Instance* instance)
 
 bool isValid(const Solution& solution, const Instance* instance)
 {
-	outputLength(solution, instance) <= instance->n;
+	return outputLength(solution, instance) <= instance->n;
 }

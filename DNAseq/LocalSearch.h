@@ -6,7 +6,26 @@ using Solution = std::vector<size_t>;
 struct RankedSolution
 {
 	Solution solution;
-	int value;
+	int cost;
+
+	bool operator>(const RankedSolution& other) const
+	{
+		return solution.size() > other.solution.size();
+	}
+
+	bool operator==(const RankedSolution& other) const
+	{
+		if (solution.size() != other.solution.size())
+			return false;
+
+		for (size_t i = 0; i < solution.size(); ++i)
+		{
+			if (solution[i] != other.solution[i])
+				return false;
+		}
+
+		return true;
+	}
 };
 
 using Neighbours = std::vector<RankedSolution>;
@@ -19,13 +38,14 @@ public:
 
 
 private:
-	Neighbours generateNeighbours(size_t k);
-	size_t getBestNeighbour(const Neighbours& neighbours);
+	RankedSolution getBestNeighbour(size_t k);
 	int solutionValue(const Solution& solution);
+	bool isTabu(const RankedSolution& solution);
 
 	const Instance* instance;
-	Solution bestSolution;
-	int bestValue;
-	std::vector<Solution> tabuList;
+	RankedSolution bestSolution;
+	std::vector<RankedSolution> tabuList;
 };
 
+int cost(const Solution& solution, const Instance* instance);
+bool isValid(const Solution& solution, const Instance* instance);
