@@ -6,6 +6,7 @@
 #include "Instance.h"
 #include "LocalSearch.h"
 #include "Logger.h"
+#include "Timer.h"
 
 #define STRINGIFY(x) #x
 
@@ -62,13 +63,18 @@ public:
 
     static void test(Sequencer& s, Insts& tests)
     {
+        Timer timer;
         std::cout << "##### RUNNING TEST ON: " << s.getName() << " #####\n";
         for (const Instance& instance : tests)
         {
+            timer.start();
             size_t used = s.run(instance);
+            double elapsedMS = timer.elapsedMilliseconds();
+
             float acc = used / (float)instance.bestSolutionSize;
             LOG_INFO("{} acc: {}/{} = {}", instance.name, used, instance.bestSolutionSize, acc);
-            //std::cout << instance.name << ',' << FIXED_FLOAT(acc) << '\n'; // csv output
+            LOG_INFO("time: {}", elapsedMS);
+            //std::cout << instance.name << ',' << FIXED_FLOAT(acc) << ',' << FIXED_FLOAT(elapsedMS) << '\n'; // csv output
         }
     }
 
