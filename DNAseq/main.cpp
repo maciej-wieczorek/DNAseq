@@ -33,7 +33,7 @@ public:
     virtual size_t run(const Instance& instance) override
     {
         // use AntColony and LocalSearch
-        AntColony antColony(instance, AntColony::Parameters(100, 100, 0.5f, 1.0f, 0.5f));
+        AntColony antColony(instance, AntColony::Parameters(300, 100, 1.0f, 1.0f, 0.1f));
         std::vector<int> result = antColony.Run();
 
         Solution lsInput = Solution{ result.begin(), result.end() };
