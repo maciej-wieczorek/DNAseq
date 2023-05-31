@@ -68,6 +68,7 @@ public:
             size_t used = s.run(instance);
             float acc = used / (float)instance.bestSolutionSize;
             LOG_INFO("{} acc: {}/{} = {}", instance.name, used, instance.bestSolutionSize, acc);
+            //std::cout << instance.name << ',' << FIXED_FLOAT(acc) << '\n'; // csv output
         }
     }
 
