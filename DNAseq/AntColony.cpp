@@ -39,7 +39,7 @@ std::vector<int> AntColony::Run() {
 		LOG_TRACE("ant colony: {} / {}", i + 1, m_Parameters.Iterations);
 	}
 
-	LOG_TRACE("pheromone:{}", PheromeneToString());
+	// LOG_TRACE("pheromone:{}", PheromeneToString());
 
 	return Result();
 }
@@ -57,74 +57,18 @@ void AntColony::Iteration() {
 	}
 
 	// generate ants path
+	std::vector<std::thread> threads;
+	std::mutex* mutex = new std::mutex();
+
 	for (int a = 0; a < m_Parameters.Ants; a++) {
-		std::set<int> availableVertices;
-		for (int i = 0; i < size; i++) {
-			availableVertices.insert(i);
-		}
-
-		int pathLength = 0;
-		int currentVertex = size;
-		std::vector<int> path;
-		path.push_back(currentVertex);
-
-		// generate ant path
-		while (true) {
-			std::map<int, float> weights;
-			float weightsSum = 0;
-
-			// calculate weights for available edges
-			std::set<int> toRemove;
-			for (int vertex : availableVertices) {
-				// distance from current vertex and available vertex
-				int distance = currentVertex == size ? m_Instance.l : m_Instance.adjMatrix[currentVertex][vertex];
-
-				if (pathLength + distance > m_Instance.n) {
-					toRemove.insert(vertex);
-					continue;
-				}
-
-				// calculate weight of edge
-				float weight = std::pow(m_Pheromone[currentVertex][vertex], m_Parameters.Alpha) * std::pow(1.f / (float)distance, m_Parameters.Beta);
-				weights.insert(std::pair<int, float>(vertex, weight));
-				weightsSum += weight;
-			}
-
-			// remove not available edges
-			for (int vertex : toRemove) {
-				availableVertices.erase(vertex);
-			}
-
-			// end when there are no more available edges
-			if (availableVertices.empty()) {
-				break;
-			}
-
-			// select random edge
-			int nextVertex = -1;
-			float random = (float)rand() / (float)RAND_MAX * weightsSum;
-			for (std::pair<int, float> weight : weights) {
-				random -= weight.second;
-				if (random < 0.f) {
-					nextVertex = weight.first;
-					break;
-				}
-			}
-			if (nextVertex == -1) {
-				nextVertex = weights.rbegin()->first;
-			}
-
-			path.push_back(nextVertex);
-			pathLength += currentVertex == size ? m_Instance.l : m_Instance.adjMatrix[currentVertex][nextVertex];
-			availableVertices.erase(nextVertex);
-			currentVertex = nextVertex;
-		}
-
-		// calculate added pheromone
-		for (int i = 0; i < path.size() - 1; i++) {
-			pheromoneDeposited[path[i]][path[i + 1]] += (float)path.size() / (float)m_Instance.bestSolutionSize;
-		}
+		threads.push_back(std::thread(&AntColony::Ant, this, pheromoneDeposited, mutex);
 	}
+
+	for (auto& th : threads) {
+		th.join();
+	}
+
+	delete mutex;
 
 	// update pheromone
 	for (int i = 0; i < size + 1; i++) {
@@ -133,6 +77,78 @@ void AntColony::Iteration() {
 		}
 	}
 
+}
+
+void AntColony::Ant(float** pheromoneDeposited, std::mutex* mutex) {
+	int size = m_Instance.oligonucleotides.size();
+	std::set<int> availableVertices;
+	for (int i = 0; i < size; i++) {
+		availableVertices.insert(i);
+	}
+
+	int pathLength = 0;
+	int currentVertex = size;
+	std::vector<int> path;
+	path.push_back(currentVertex);
+
+	// generate ant path
+	while (true) {
+		std::map<int, float> weights;
+		float weightsSum = 0;
+
+		// calculate weights for available edges
+		std::set<int> toRemove;
+		for (int vertex : availableVertices) {
+			// distance from current vertex and available vertex
+			int distance = currentVertex == size ? m_Instance.l : m_Instance.adjMatrix[currentVertex][vertex];
+
+			if (pathLength + distance > m_Instance.n) {
+				toRemove.insert(vertex);
+				continue;
+			}
+
+			// calculate weight of edge
+			float weight = std::pow(m_Pheromone[currentVertex][vertex], m_Parameters.Alpha) * std::pow(1.f / (float)distance, m_Parameters.Beta);
+			weights.insert(std::pair<int, float>(vertex, weight));
+			weightsSum += weight;
+		}
+
+		// remove not available edges
+		for (int vertex : toRemove) {
+			availableVertices.erase(vertex);
+		}
+
+		// end when there are no more available edges
+		if (availableVertices.empty()) {
+			break;
+		}
+
+		// select random edge
+		int nextVertex = -1;
+		float random = (float)rand() / (float)RAND_MAX * weightsSum;
+		for (std::pair<int, float> weight : weights) {
+			random -= weight.second;
+			if (random < 0.f) {
+				nextVertex = weight.first;
+				break;
+			}
+		}
+		if (nextVertex == -1) {
+			nextVertex = weights.rbegin()->first;
+		}
+
+		path.push_back(nextVertex);
+		pathLength += currentVertex == size ? m_Instance.l : m_Instance.adjMatrix[currentVertex][nextVertex];
+		availableVertices.erase(nextVertex);
+		currentVertex = nextVertex;
+	}
+
+	// calculate added pheromone
+	mutex->lock();
+	for (int i = 0; i < path.size() - 1; i++) {
+		pheromoneDeposited[path[i]][path[i + 1]] += (float)path.size() / (float)m_Instance.bestSolutionSize;
+	}
+	mutex->unlock();
 }
 
 std::vector<int> AntColony::Result() {

@@ -1,5 +1,6 @@
 #pragma once
 #include "Instance.h"
+#include <thread>
 
 class AntColony {
 
@@ -23,6 +24,7 @@ public:
 	
 private:
 	void Iteration();
+	void Ant(float** pheromoneDeposited, std::mutex* mutex);
 	std::vector<int> Result();
 	std::string PheromeneToString() const;
 	
