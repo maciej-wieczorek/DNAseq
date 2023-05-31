@@ -39,7 +39,7 @@ std::vector<int> AntColony::Run() {
 		LOG_TRACE("ant colony: {} / {}", i + 1, m_Parameters.Iterations);
 	}
 
-	LOG_TRACE("pheromone:{}", PheromeneToString());
+	// LOG_TRACE("pheromone:{}", PheromeneToString());
 
 	return Result();
 }

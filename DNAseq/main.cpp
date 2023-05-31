@@ -43,7 +43,7 @@ public:
         LOG_INFO("sequence: {}", instance.output(improvedResult));
         LOG_INFO("length: {}/{}", instance.outputLength(improvedResult), instance.n);
 
-        return result.size();
+        return improvedResult.size();
     }
 
     virtual std::string getName() const override
