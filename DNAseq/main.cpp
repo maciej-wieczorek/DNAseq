@@ -26,21 +26,6 @@ public:
     virtual std::string getName() const = 0;
 };
 
-class STSP_Sequencer : public Sequencer
-{
-public:
-    virtual size_t run(const Instance& instance) override
-    {
-        // TODO: implement STSP Sequencer
-        return 0.9f * instance.s;
-    }
-
-    virtual std::string getName() const override
-    {
-        return "STSP Sequencer";
-    }
-};
-
 class Our_Sequencer : public Sequencer
 {
 public:
@@ -56,7 +41,7 @@ public:
         }
         std::cout << std::endl;
 
-        return 1;
+        return result.size();
     }
 
     virtual std::string getName() const override
@@ -145,11 +130,8 @@ int main() {
         worker.join();
     }
 
-    STSP_Sequencer perfectSequencer;
     Our_Sequencer ourSequencer{};
-
     Tester::test(ourSequencer, tests);
-    Tester::compare(perfectSequencer, ourSequencer, tests);
 
     return 0;
 }
