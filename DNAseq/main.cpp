@@ -4,6 +4,7 @@
 
 #include "AntColony.h"
 #include "Instance.h"
+#include "LocalSearch.h"
 #include "Logger.h"
 
 #define STRINGIFY(x) #x
