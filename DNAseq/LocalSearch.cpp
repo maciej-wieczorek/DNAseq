@@ -1,4 +1,5 @@
 #include "LocalSearch.h"
+#include "Logger.h"
 
 LocalSearch::LocalSearch(const Instance& instance, Solution solution) :
 	instance{ &instance }, bestSolution{ solution, cost(solution, &instance) }, currentSolution{ bestSolution }
@@ -13,6 +14,8 @@ Solution LocalSearch::run(size_t tabuSize, size_t numIterations, size_t k)
 	tabuList = std::vector<RankedSolution>{};
 	for (size_t i = 0; i < numIterations; ++i)
 	{
+		LOG_TRACE("local search: {} / {}", i + 1, numIterations);
+
 		currentSolution = getBestNeighbour(k);
 
 		if (currentSolution.solution.size() == 0)
@@ -23,6 +26,7 @@ Solution LocalSearch::run(size_t tabuSize, size_t numIterations, size_t k)
 		if (currentSolution > bestSolution)
 		{
 			bestSolution = currentSolution;
+			LOG_TRACE("Found improvement");
 		}
 	}
 

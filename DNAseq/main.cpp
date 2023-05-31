@@ -32,12 +32,15 @@ class Our_Sequencer : public Sequencer
 public:
     virtual size_t run(const Instance& instance) override
     {
-        // TODO: implement our Sequencer
         // use AntColony and LocalSearch
         AntColony antColony(instance, AntColony::Parameters(100, 100, 1.f, 1.f, 0.1f));
         std::vector<int> result = antColony.Run();
 
-        for (int vertex : result) {
+        Solution lsInput = Solution{ result.begin(), result.end() };
+        LocalSearch localSearch(instance, lsInput);
+        Solution improvedResult = localSearch.run();
+
+        for (size_t vertex : improvedResult) {
             std::cout << vertex << " ";
         }
         std::cout << std::endl;
@@ -91,7 +94,7 @@ void loadInstance(std::filesystem::path path, std::vector<Instance>* tests, std:
 {
     Instance&& instance = Instance{ path };
     mutex->lock();
-    std::cout << "Loaded " << path << std::endl;
+    LOG_INFO("Loaded {}", path.string());
     tests->push_back(instance);
     mutex->unlock();
 }
