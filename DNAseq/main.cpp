@@ -46,6 +46,7 @@ public:
         std::cout << std::endl;
 
         size_t outputLength = instance.outputLength(improvedResult);
+        std::cout << "sequence: " << instance.output(improvedResult) << std::endl;
         std::cout << "length: " << outputLength << "/" << instance.n << std::endl;
 
         return result.size();
@@ -129,7 +130,7 @@ int main() {
     for (const auto& entry : std::filesystem::directory_iterator(path))
     {
         workers.push_back(std::thread(loadInstance, entry.path(), &tests, &mutex));
-         break; // DEBUG: hard coded to test only one instance
+        // break; // DEBUG: hard coded to test only one instance
     }
 
     for (auto& worker : workers)

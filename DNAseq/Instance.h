@@ -15,6 +15,7 @@ class Instance
 {
 public:
     Instance(std::filesystem::path filepath);
+    std::string output(const std::vector<size_t>& solution) const;
     size_t outputLength(const std::vector<size_t>& solution) const;
 
 private:
