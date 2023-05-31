@@ -37,7 +37,10 @@ Solution do2Opt(const Solution& path, size_t i, size_t j)
 
 Neighbours LocalSearch::generateNeighbours(size_t k)
 {
-	// jak zawsze jest improvement to nigdy nie ma potworzeñ, po co tabu ????????
+	// jak zawsze jest improvement to nigdy nie ma potworzen, po co tabu?
+	// nie istniejace polaczenie mozna zamienic na istniejace
+	// nie oceniaj rozwiazan po koszcie tylko po liczbie miast (nie do konca)
+	// test czy valid
 	Neighbours neighbours{};
 	const size_t n = instance->s;
 
@@ -57,11 +60,11 @@ Neighbours LocalSearch::generateNeighbours(size_t k)
 
 size_t LocalSearch::getBestNeighbour(const Neighbours& neighbours)
 {
-	int bestVal = std::numeric_limits<int>::min();
+	int bestVal = std::numeric_limits<int>::max();
 	size_t bestIdx = 0;
 	for (size_t i = 0; i < neighbours.size(); ++i)
 	{
-		if (neighbours[i].value > bestVal)
+		if (neighbours[i].value < bestVal)
 		{
 			bestVal = neighbours[i].value;
 			bestIdx = i;
@@ -73,6 +76,12 @@ size_t LocalSearch::getBestNeighbour(const Neighbours& neighbours)
 
 int LocalSearch::solutionValue(const Solution& solution)
 {
+	// jak rozwiazanie jest krotsze, ale maly koszt to powinno byc lepsze od dluzszego
+	return solution.size();
+}
+
+int cost(const Solution& solution, const Instance* instance)
+{
 	int value{};
 	for (size_t i = 0; i < solution.size() - 1; ++i)
 	{
@@ -82,4 +91,14 @@ int LocalSearch::solutionValue(const Solution& solution)
 	}
 
 	return value;
+}
+
+size_t outputLength(const Solution& solution, const Instance* instance)
+{
+	return cost(solution, instance) + instance->l;
+}
+
+bool isValid(const Solution& solution, const Instance* instance)
+{
+	outputLength(solution, instance) <= instance->n;
 }
