@@ -124,9 +124,9 @@ int main()
         worker.join();
     }
 
-    Solution solution{ 1, 3, 4 };
+    Solution solution{ 4 };
     LocalSearch ls = LocalSearch{ tests[0], solution };
-    ls.run();
+    Solution improvedSolution = ls.run();
 
     STSP_Sequencer perfectSequencer;
     Our_Sequencer ourSequencer{};

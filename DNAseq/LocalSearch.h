@@ -10,7 +10,12 @@ struct RankedSolution
 
 	bool operator>(const RankedSolution& other) const
 	{
-		return solution.size() > other.solution.size();
+		if (solution.size() > other.solution.size())
+			return true;
+		else if (solution.size() < other.solution.size())
+			return false;
+		else
+			return (cost < other.cost);
 	}
 
 	bool operator==(const RankedSolution& other) const
@@ -39,13 +44,14 @@ public:
 
 private:
 	RankedSolution getBestNeighbour(size_t k);
-	int solutionValue(const Solution& solution);
 	bool isTabu(const RankedSolution& solution);
 
 	const Instance* instance;
 	RankedSolution bestSolution;
+	RankedSolution currentSolution;
 	std::vector<RankedSolution> tabuList;
 };
 
 int cost(const Solution& solution, const Instance* instance);
-bool isValid(const Solution& solution, const Instance* instance);
+bool isValid(const RankedSolution& solution, const Instance* instance);
+
