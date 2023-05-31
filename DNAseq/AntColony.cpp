@@ -122,7 +122,7 @@ void AntColony::Iteration() {
 
 		// calculate added pheromone
 		for (int i = 0; i < path.size() - 1; i++) {
-			pheromoneDeposited[path[i]][path[i + 1]] += (float)path.size() / (float)m_Instance.n;
+			pheromoneDeposited[path[i]][path[i + 1]] += (float)path.size() / (float)m_Instance.bestSolutionSize;
 		}
 	}
 
@@ -150,6 +150,7 @@ std::vector<int> AntColony::Result() {
 	while (true) {
 		std::set<int> toRemove;
 		int nextVertex = 0;
+		int maxPheromone = 0;
 
 		for (int vertex : availableVertices) {
 			// distance from current vertex and available vertex
@@ -160,8 +161,9 @@ std::vector<int> AntColony::Result() {
 				continue;
 			}
 
-			if (m_Pheromone[currentVertex][vertex] > m_Pheromone[currentVertex][nextVertex]) {
+			if (m_Pheromone[currentVertex][vertex] > maxPheromone) {
 				nextVertex = vertex;
+				maxPheromone = m_Pheromone[currentVertex][vertex];
 			}
 		}
 
