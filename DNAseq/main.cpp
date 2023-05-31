@@ -33,21 +33,15 @@ public:
     virtual size_t run(const Instance& instance) override
     {
         // use AntColony and LocalSearch
-        AntColony antColony(instance, AntColony::Parameters(100, 100, 1.f, 1.f, 0.1f));
+        AntColony antColony(instance, AntColony::Parameters(10, 100, 1.f, 1.f, 0.1f));
         std::vector<int> result = antColony.Run();
 
         Solution lsInput = Solution{ result.begin(), result.end() };
         LocalSearch localSearch(instance, lsInput);
         Solution improvedResult = localSearch.run();
 
-        for (size_t vertex : improvedResult) {
-            std::cout << vertex << " ";
-        }
-        std::cout << std::endl;
-
-        size_t outputLength = instance.outputLength(improvedResult);
-        std::cout << "sequence: " << instance.output(improvedResult) << std::endl;
-        std::cout << "length: " << outputLength << "/" << instance.n << std::endl;
+        LOG_INFO("sequence: {}", instance.output(improvedResult));
+        LOG_INFO("length: {}/{}", instance.outputLength(improvedResult), instance.n);
 
         return result.size();
     }
