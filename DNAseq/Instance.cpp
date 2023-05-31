@@ -49,6 +49,13 @@ void Instance::extractInstanceInfo()
         errorType = POSITIVE_RANDOM;
     else if (plusPos != std::string::npos)
         errorType = POSITIVE_WRONG_ENDING;
+
+    if (errorType == NEGATIVE_RANDOM || errorType == NEGATIVE_REPEAT)
+        bestSolutionSize = s - numErrors;
+    else if (errorType == POSITIVE_RANDOM || errorType == POSITIVE_WRONG_ENDING)
+        bestSolutionSize = s;
+    else
+        bestSolutionSize = s;
 }
 
 int Instance::bestMatch(const std::string o1, const std::string o2)
@@ -69,6 +76,37 @@ int Instance::bestMatch(const std::string o1, const std::string o2)
     }
 
     return o1.size();
+}
+
+std::string Instance::output(const std::vector<size_t>& solution) const
+{
+    if (solution.size() == 0)
+        return "";
+
+    std::string output{oligonucleotides[solution[0]]};
+    for (size_t i = 1; i < solution.size(); ++i)
+    {
+        size_t v1 = solution[i - 1];
+        size_t v2 = solution[i];
+        size_t additionalPartLen = adjMatrix[v1][v2];
+        size_t commonPartLen = l - additionalPartLen;
+        output += oligonucleotides[v2].substr(commonPartLen, additionalPartLen);
+    }
+
+    return output;
+}
+
+size_t Instance::outputLength(const std::vector<size_t>& solution) const
+{
+	int value{};
+	for (size_t i = 0; i < solution.size() - 1; ++i)
+	{
+		size_t v1 = solution[i];
+		size_t v2 = solution[i + 1];
+		value += adjMatrix[v1][v2];
+	}
+
+	return value + l;
 }
 
 void Instance::buildAdjMatrix()

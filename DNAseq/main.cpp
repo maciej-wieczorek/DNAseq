@@ -45,6 +45,10 @@ public:
         }
         std::cout << std::endl;
 
+        size_t outputLength = instance.outputLength(improvedResult);
+        std::cout << "sequence: " << instance.output(improvedResult) << std::endl;
+        std::cout << "length: " << outputLength << "/" << instance.n << std::endl;
+
         return result.size();
     }
 
@@ -68,8 +72,8 @@ public:
         for (const Instance& instance : tests)
         {
             size_t used = s.run(instance);
-            float acc = used / (float)instance.s;
-            std::cout << instance.name << ":\t" << FIXED_FLOAT(acc) << '\n';
+            float acc = used / (float)instance.bestSolutionSize;
+            LOG_INFO("{} acc: {}/{} = {}", instance.name, used, instance.bestSolutionSize, acc);
         }
     }
 
