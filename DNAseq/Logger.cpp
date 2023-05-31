@@ -7,6 +7,7 @@ void Logger::Init() {
 	logSink->set_pattern("%^[%T] %l: %v%$");
 
 	s_Logger = std::make_shared<spdlog::logger>("logger", logSink);
+
 	s_Logger->set_level(spdlog::level::trace);
 	s_Logger->flush_on(spdlog::level::trace);
 }
