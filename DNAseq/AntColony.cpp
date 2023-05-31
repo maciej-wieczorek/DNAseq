@@ -39,7 +39,7 @@ std::vector<int> AntColony::Run() {
 		LOG_TRACE("ant colony: {} / {}", i + 1, m_Parameters.Iterations);
 	}
 
-	// LOG_TRACE("pheromone:{}", PheromeneToString());
+	LOG_TRACE("pheromone:{}", PheromeneToString());
 
 	return Result();
 }
@@ -122,7 +122,7 @@ void AntColony::Iteration() {
 
 		// calculate added pheromone
 		for (int i = 0; i < path.size() - 1; i++) {
-			pheromoneDeposited[path[i]][path[i + 1]] += path.size() - 1;
+			pheromoneDeposited[path[i]][path[i + 1]] += (float)path.size() / (float)m_Instance.n;
 		}
 	}
 
